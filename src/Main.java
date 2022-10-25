@@ -3,7 +3,7 @@ import java.io.*;
 public class Main {
 
     public static void main(String[] args) {
-	    //Get algorithm
+	   //Get algorithm
         String algo = args[1];
 
         //Get quantum (if applicable)
