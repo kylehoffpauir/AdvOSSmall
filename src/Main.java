@@ -8,7 +8,7 @@ public class Main {
 
         //Get quantum (if applicable)
         int quantum = NULL;
-        if (args.length == 5) {
+        if (args.length == 6) {
             quantum = Integer.parseInt(args[3]);
         }
 
