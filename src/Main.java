@@ -136,42 +136,7 @@ public class Main {
                 readProc(inFile);
             }
         });
-        private static Thread cpuThread = new Thread(new Runnable(){
-            @Override
-            public void run() {
-                while(!q.isEmpty()) {
-                    Process currentProc = q.peek();
-                    while (!currentProc.getCpu().isEmpty()) {
-                        try {
-                            Thread.sleep(currentProc.removeCpu());
-                            ioThread.run();
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                }
-            }
-        });
-        private static Thread ioThread = new Thread(new Runnable(){
-            @Override
-            public void run() {
-                while(!q.isEmpty()) {
-                    Process currentProc = q.peek();
-                    while (!currentProc.getIo().isEmpty()) {
-                        try {
-                            Thread.sleep(currentProc.removeIo());
-                            ioThread.run();
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                }
-            }
-        });
-        fileThread.run();
-        cpuThread.run();
-        ioThread.run();
-
+        fileThread.start();
 
     }
 
