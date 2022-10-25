@@ -5,24 +5,24 @@ import java.io.*;
 public class Main {
     public static String algo = "";
     public static int quantum = -1;
-
+    private static final boolean DEBUG = true;
+    private static PriorityQueue<Process> q = new PriorityQueue<Process>();
 
     public static void main(String[] args) {
         //Go through file and use algos
         File inFile = getIn(args);
-        PriorityQueue<Process> q = readProc(inFile);
         switch(algo) {
             case "FCFS":
-                FCFS(q, inFile);
+                FCFS(inFile);
                 break;
             case "RR":
-                RR(q, inFile);
+                RR(inFile);
                 break;
             case "SPN":
-                SPN(q, inFile);
+                SPN(inFile);
                 break;
             case "PRI":
-                PRI(q, inFile);
+                PRI(inFile);
                 break;
             default:
                 System.err.println("Error - algorithm option not valid. choose [FCFS | RR | SPN | PRI]");
@@ -53,19 +53,21 @@ public class Main {
         return f;
     }
 
-    public static PriorityQueue<Process> readProc(File inFile) {
+    public static void readProc(File inFile) {
         Scanner f = null;
         try {
             f = new Scanner(inFile);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
-
-        PriorityQueue<Process> q = new PriorityQueue<Process>();
         while(f.hasNextLine()) {
             String[] items = f.nextLine().split(" ");
-            if(items[0].toLowerCase().equals("s")) {
-                q.add(new Process(true, items[1]));
+            if(items[0].toLowerCase().equals("sleep")) {
+                try {
+                    Thread.sleep(Integer.parseInt(items[1]));
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             } else if(items[0].toLowerCase().equals("proc")) {
                 Process p = new Process();
                 //only care about the priority for PRI or SPN
@@ -84,16 +86,15 @@ public class Main {
                         p.addIo(Integer.parseInt(items[i]));
                     }
                 }
+                if(DEBUG) System.out.println(p);
                 q.add(p);
             } else if(items[0].toLowerCase().equals("stop")) {
-                return q;
+                return;
             } else {
                 System.err.println("Error - input file has unexpected command");
                 System.exit(3);
             }
-            return q;
         }
-        return q;
     }
 
     public static void sendOut(File inFile) {
@@ -120,7 +121,38 @@ public class Main {
     }
 
     //100
-    public static void FCFS(PriorityQueue<Process> q, File file) {
+    public static void FCFS(PriorityQueue<Process> q, File inFile) {
+        Thread fileThread = new Thread(new Runnable(){
+            @Override
+            public void run() {
+                readProc(inFile);
+            }
+        });
+        Thread cpuThread = new Thread(new Runnable(){
+            @Override
+            public void run() {
+                while(!q.isEmpty()) {
+                    Process currentProc = q.peek();
+                    while (!currentProc.getCpu().isEmpty()) {
+                        try {
+                            Thread.sleep(currentProc.removeCpu());
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
+        });
+        Thread ioThread = new Thread(new Runnable(){
+            @Override
+            public void run() {
+            }
+        });
+
+        fileThread.run();
+        cpuThread.run();
+        ioThread.run();
+
 
     }
 

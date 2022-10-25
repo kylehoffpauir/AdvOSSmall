@@ -76,6 +76,15 @@ public class Process implements Comparable{
     }
 
     @Override
+    public String toString() {
+        if(this.isSleep) {
+            return "isSleep: " + isSleep + "\nsleeptime: " + sleepTime + "\n";
+        } else {
+            return "priority: " + priority + "\ncpu: " + cpu.toString() + "\nio: " + io.toString() + "\nisSleep: " + isSleep + "\n";
+        }
+    }
+
+    @Override
     public int compareTo(Object o) {
         return 0;
     }
