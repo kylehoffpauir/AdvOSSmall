@@ -120,22 +120,22 @@ public class Main {
     }
 
     //100
-    public static void FCFS(PriorityQueue<Process> inFile, File file) {
+    public static void FCFS(PriorityQueue<Process> q, File file) {
 
     }
 
     //25
-    public static void SPN(PriorityQueue<Process> inFile, File file) {
+    public static void SPN(PriorityQueue<Process> q, File file) {
 
     }
 
     //25
-    public static void PRI(PriorityQueue<Process> inFile, File file) {
+    public static void PRI(PriorityQueue<Process> q, File file) {
 
     }
 
     //40
-    public static void RR(PriorityQueue<Process> inFile, File file) {
+    public static void RR(PriorityQueue<Process> q, File file) {
 
     }
 }
