@@ -1,20 +1,31 @@
 import java.util.ArrayList;
 
-public class Process {
+public class Process implements Comparable{
     private int priority;
     private ArrayList<Integer> cpu;
     private ArrayList<Integer> io;
+    private boolean isSleep;
+    private int sleepTime;
 
     public Process(int priority, ArrayList<Integer> cpu, ArrayList<Integer> io) {
         this.priority = priority;
         this.cpu = cpu;
         this.io = io;
+        isSleep = false;
+        sleepTime = 0;
     }
 
     public Process() {
         this.priority = 0;
         this.cpu = new ArrayList<Integer>();
         this.io = new ArrayList<Integer>();
+        isSleep = false;
+        sleepTime = 0;
+    }
+
+    public Process(boolean b, String item) {
+        this.isSleep = b;
+        this.sleepTime = Integer.parseInt(item);
     }
 
     public int removeCpu() {
@@ -51,5 +62,21 @@ public class Process {
 
     public ArrayList<Integer> getIo() {
         return io;
+    }
+
+    public int compareTo(Process o) {
+        if(this.priority < o.getPriority()) {
+            return -1;
+        }
+        else if(this.priority > o.getPriority()) {
+            return 1;
+        }
+        else
+            return 0;
+    }
+
+    @Override
+    public int compareTo(Object o) {
+        return 0;
     }
 }

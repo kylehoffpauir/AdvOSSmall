@@ -1,6 +1,5 @@
 import java.util.*;
 import java.io.*;
-import java.lang.Thread;
 
 
 public class Main {
@@ -11,19 +10,19 @@ public class Main {
     public static void main(String[] args) {
         //Go through file and use algos
         File inFile = getIn(args);
-
+        PriorityQueue<Process> q = readProc(inFile);
         switch(algo) {
             case "FCFS":
-                FCFS(inFile);
+                FCFS(q, inFile);
                 break;
             case "RR":
-                RR(inFile);
+                RR(q, inFile);
                 break;
             case "SPN":
-                SPN(inFile);
+                SPN(q, inFile);
                 break;
             case "PRI":
-                PRI(inFile);
+                PRI(q, inFile);
                 break;
             default:
                 System.err.println("Error - algorithm option not valid. choose [FCFS | RR | SPN | PRI]");
@@ -54,6 +53,49 @@ public class Main {
         return f;
     }
 
+    public static PriorityQueue<Process> readProc(File inFile) {
+        Scanner f = null;
+        try {
+            f = new Scanner(inFile);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        PriorityQueue<Process> q = new PriorityQueue<Process>();
+        while(f.hasNextLine()) {
+            String[] items = f.nextLine().split(" ");
+            if(items[0].toLowerCase().equals("s")) {
+                q.add(new Process(true, items[1]));
+            } else if(items[0].toLowerCase().equals("proc")) {
+                Process p = new Process();
+                //only care about the priority for PRI or SPN
+                if(algo.equals("PRI") || algo.equals("SPN"))
+                    p.setPriority(Integer.parseInt(items[1]));
+                else
+                    p.setPriority(1);
+
+                for(int i = 2; i < items.length; i++) {
+                    //cpu is even items
+                    if( i % 2 == 0) {
+                        p.addCpu(Integer.parseInt(items[i]));
+                    }
+                    //io is odd items
+                    else {
+                        p.addIo(Integer.parseInt(items[i]));
+                    }
+                }
+                q.add(p);
+            } else if(items[0].toLowerCase().equals("stop")) {
+                return q;
+            } else {
+                System.err.println("Error - input file has unexpected command");
+                System.exit(3);
+            }
+            return q;
+        }
+        return q;
+    }
+
     public static void sendOut(File inFile) {
         //Create output file
         PrintWriter output = null;
@@ -78,22 +120,22 @@ public class Main {
     }
 
     //100
-    public static void FCFS(File inFile) {
+    public static void FCFS(PriorityQueue<Process> inFile, File file) {
 
     }
 
     //25
-    public static void SPN(File inFile) {
+    public static void SPN(PriorityQueue<Process> inFile, File file) {
 
     }
 
     //25
-    public static void PRI(File inFile) {
+    public static void PRI(PriorityQueue<Process> inFile, File file) {
 
     }
 
     //40
-    public static void RR(File inFile) {
+    public static void RR(PriorityQueue<Process> inFile, File file) {
 
     }
 }
