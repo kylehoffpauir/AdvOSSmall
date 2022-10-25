@@ -121,7 +121,7 @@ public class Main {
     }
 
     //100
-    public static void FCFS(PriorityQueue<Process> q, File inFile) {
+    public static void FCFS(File inFile) {
         Thread fileThread = new Thread(new Runnable(){
             @Override
             public void run() {
@@ -157,17 +157,17 @@ public class Main {
     }
 
     //25
-    public static void SPN(PriorityQueue<Process> q, File file) {
+    public static void SPN(File file) {
 
     }
 
     //25
-    public static void PRI(PriorityQueue<Process> q, File file) {
+    public static void PRI(File file) {
 
     }
 
     //40
-    public static void RR(PriorityQueue<Process> q, File file) {
+    public static void RR(File file) {
 
     }
 }
