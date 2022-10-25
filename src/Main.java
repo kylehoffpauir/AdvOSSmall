@@ -8,6 +8,9 @@ public class Main {
     private static final boolean DEBUG = true;
     private static PriorityQueue<Process> q = new PriorityQueue<Process>();
 
+
+
+
     public static void main(String[] args) {
         //Go through file and use algos
         File inFile = getIn(args);
@@ -60,6 +63,7 @@ public class Main {
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
+        int lineCount = 1;
         while(f.hasNextLine()) {
             String[] items = f.nextLine().split(" ");
             if(items[0].toLowerCase().equals("sleep")) {
@@ -73,6 +77,9 @@ public class Main {
                 //only care about the priority for PRI or SPN
                 if(algo.equals("PRI") || algo.equals("SPN"))
                     p.setPriority(Integer.parseInt(items[1]));
+                if(algo.equals("FCFS")) {
+                    p.setPriority(lineCount);
+                }
                 else
                     p.setPriority(1);
 
@@ -94,6 +101,7 @@ public class Main {
                 System.err.println("Error - input file has unexpected command");
                 System.exit(3);
             }
+            lineCount++;
         }
     }
 
@@ -128,7 +136,7 @@ public class Main {
                 readProc(inFile);
             }
         });
-        Thread cpuThread = new Thread(new Runnable(){
+        private static Thread cpuThread = new Thread(new Runnable(){
             @Override
             public void run() {
                 while(!q.isEmpty()) {
@@ -136,6 +144,7 @@ public class Main {
                     while (!currentProc.getCpu().isEmpty()) {
                         try {
                             Thread.sleep(currentProc.removeCpu());
+                            ioThread.run();
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
@@ -143,12 +152,22 @@ public class Main {
                 }
             }
         });
-        Thread ioThread = new Thread(new Runnable(){
+        private static Thread ioThread = new Thread(new Runnable(){
             @Override
             public void run() {
+                while(!q.isEmpty()) {
+                    Process currentProc = q.peek();
+                    while (!currentProc.getIo().isEmpty()) {
+                        try {
+                            Thread.sleep(currentProc.removeIo());
+                            ioThread.run();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
             }
         });
-
         fileThread.run();
         cpuThread.run();
         ioThread.run();
