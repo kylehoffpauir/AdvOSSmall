@@ -1,3 +1,5 @@
+import com.sun.org.apache.xpath.internal.operations.Bool;
+
 import java.util.*;
 import java.io.*;
 
@@ -5,7 +7,7 @@ import java.io.*;
 public class Main {
 	public static String algo = "";
 	public static int quantum = -1;
-	public static boolean reading = true;
+	public static Boolean reading = true;
 	private static final boolean DEBUG = true;
 	protected static LinkedList<Process> readyQueue = new LinkedList<Process>();
 	protected static LinkedList<Process> ioQueue = new LinkedList<Process>();
@@ -186,7 +188,7 @@ public class Main {
 					} else if (items[0].toLowerCase().equals("stop")) {
 						//if we run into a stop then we end the reading
 						this.exit = true;
-						reading = false;
+						synchronized (reading) { reading = false; }
 						if(DEBUG) System.out.println("STOPPING ReadThread");
 					} else {
 						System.err.println("Error - input file has unexpected command");
@@ -243,8 +245,10 @@ public class Main {
 							}
 						}
 					}
-					if(!reading && ioQueue.isEmpty())
-						exit = true;
+					synchronized (reading) {
+						if (!reading && ioQueue.isEmpty())
+							exit = true;
+					}
 				}
 			}//end !exit loop
 		}
@@ -302,8 +306,10 @@ public class Main {
 							exit = true;
 						}
 					}
-					if(!reading && readyQueue.isEmpty())
-						exit = true;
+					synchronized (reading) {
+						if (!reading && readyQueue.isEmpty())
+							exit = true;
+					}
 				}
 			}//end !exit loop
 		}
