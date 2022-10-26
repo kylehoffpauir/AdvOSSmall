@@ -40,8 +40,6 @@ public class Process implements Comparable{
         sleepTime = 0;
         startTime = System.currentTimeMillis();
         first = false;
-        cpuTotal = addUpCpu();
-        ioTotal = addUpIo();
     }
 
     public Process(boolean b, String item) {
@@ -67,10 +65,12 @@ public class Process implements Comparable{
 
     public void addIo(int i) {
         this.io.add(i);
+        ioTotal = addUpIo();
     }
 
     public void addCpu(int c) {
         this.cpu.add(c);
+        cpuTotal = addUpCpu();
     }
 
     public void setPriority(int p) {
@@ -101,15 +101,16 @@ public class Process implements Comparable{
     }
     public int addUpCpu() {
         int total = 0;
-        for (int x : cpu)
+        for (Integer x : cpu)
             total += x;
         return total;
     }
 
     public int addUpIo() {
         int total = 0;
-        for (int x : io)
+        for (Integer x : io) {
             total += x;
+        }
         return total;
     }
 

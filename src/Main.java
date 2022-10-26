@@ -10,7 +10,7 @@ public class Main {
 	public static Boolean reading = true;
 	public static Boolean ioQEmpty = true;
 	public static Boolean readyQEmpty = true;
-	private static final boolean DEBUG = true;
+	private static final boolean DEBUG = false;
 	private static LinkedList<Process> readyQueue = new LinkedList<Process>();
 	private static LinkedList<Process> ioQueue = new LinkedList<Process>();
 	private static LinkedList<Process> completedProc = new LinkedList<Process>();
@@ -27,24 +27,6 @@ public class Main {
 		//Go through file and use algos
 		File inFile = getIn(args);
 		doRun(inFile);
-//		switch (algo) {
-//			case "FCFS":
-//				FCFS(inFile);
-//				break;
-//			case "RR":
-//				RR(inFile);
-//				break;
-//			case "SPN":
-//				SPN(inFile);
-//				break;
-//			case "PRI":
-//				PRI(inFile);
-//				break;
-//			default:
-//				System.err.println("Error - algorithm option not valid. choose [FCFS | RR | SPN | PRI]");
-//				System.exit(2);
-//		}
-
 	}
 
 
@@ -70,13 +52,6 @@ public class Main {
 	}
 
 	public static void sendOut(File inFile) {
-		//Create output file
-		PrintWriter output = null;
-		try {
-			output = new PrintWriter("results.txt");
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		}
 		throughput = (projectEndTime - projectStartTime) / completedProc.size();
 		//process level metrics will be combined for every completed process?
 		for (Process x : completedProc) {
@@ -88,18 +63,17 @@ public class Main {
 		}
 
         //fill output file
-		output.println("Input File Name : " + inFile.getName());
-		output.print("CPU Scheduling Alg : " + algo);
-		if (quantum == -1)
-			output.println(" (" + quantum + ")");
-		else output.println();
-		//String utilization = "", throughput = "", turnaroundTime = "", waitingTime = "", responseTime = "";
-		output.println("CPU utilization : " + utilization + "ms");
-		output.println("Throughput : " + throughput + "ms");
-		output.println("Turnaround time : " + turnaroundTime + "ms");
-		output.println("Waiting time : " + waitingTime + "ms");
-		output.println("Response time : " + responseTime + "ms");
-		output.close();
+		System.out.println("Input File Name : " + inFile.getName());
+		System.out.print("CPU Scheduling Alg : " + algo);
+		if (quantum != -1)
+			System.out.println(" (" + quantum + ")");
+		else System.out.println();
+		System.out.println("CPU utilization : " + utilization + "ms");
+		System.out.println("Throughput : " + throughput + "ms");
+		System.out.println("Turnaround time : " + turnaroundTime + "ms");
+		System.out.println("Waiting time : " + waitingTime + "ms");
+		System.out.println("Response time : " + responseTime + "ms");
+		System.out.println("Response time : " + responseTime + "ms");
 	}
 
 	//100
@@ -116,9 +90,11 @@ public class Main {
 		iot.start();
 		// wait for threads to end
 		try {
-			ft.join();
-			cput.join();
-			iot.join();
+			//synchronized (completedProc) {
+				ft.join();
+				cput.join();
+				iot.join();
+			//}
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
@@ -201,7 +177,7 @@ public class Main {
 						reading = false;
 						System.exit(3);
 					}
-					if (lineCount < 10) lineCount++;
+					lineCount++;
 				}
 
 			}//end the !exit loop
@@ -239,20 +215,29 @@ public class Main {
 								//remove the first element from the process' cpu queue
 								if(algo.equals("RR")) {
 									//TODO -- FIX THIS SO THE RR QUANTUM TIME WORKS
-									int cpuTime = currentProc.removeCpu() - quantum;
-									int sleeptime = quantum;
-									sleep(sleeptime);
-									if (DEBUG) System.out.println("Cpu thread sleeping for " + sleeptime);
-									if(!currentProc.getIo().isEmpty())
+									int cpuTime = currentProc.getCpu().get(0) - quantum;
+									if (cpuTime > 0) {
+										currentProc.getCpu().add(0, cpuTime);
+										readyQueue.add(currentProc);
+										int sleeptime = quantum;
+										sleep(sleeptime);
+										//if we still have cpu time be sure to add back into readyquee
+										if (DEBUG) System.out.println("Cpu thread sleeping for " + sleeptime);
+									}
+									else {
+										int sleeptime = currentProc.removeCpu();
+										sleep(sleeptime);
+										//if we still have cpu time be sure to add back into readyquee
+										if (DEBUG) System.out.println("Cpu thread sleeping for " + sleeptime);
+										if(!currentProc.getIo().isEmpty())
 										ioQueue.add(currentProc);
-									else if(currentProc.getCpu().isEmpty()) {
-										//if there is no more io and after being service this proc has no more cpu
-										//then it is complete
 										synchronized (completedProc) {
 											currentProc.stop();
 											completedProc.add(currentProc);
 										}
 									}
+
+
 								} else {
 									int sleeptime = currentProc.removeCpu();
 									sleep(sleeptime);
@@ -295,8 +280,15 @@ public class Main {
 			int foundIndex = 0;
 			Process minPrio = readyQueue.get(0);
 			switch (algo) {
+				//FCFS priority is based on the processes line in the file so it forces FCFS
 				case "FCFS":
-					return readyQueue.remove(foundIndex);
+				case "PRI":
+					for(Process x : readyQueue) {
+						if(x.getPriority() < minPrio.getPriority()) {
+							minPrio = x;
+						}
+					}
+					return readyQueue.remove(readyQueue.indexOf(minPrio));
 				case "RR":
 					return readyQueue.remove(foundIndex);
 				case "SPN":
@@ -306,13 +298,6 @@ public class Main {
 						if(xTotal < minTotal) {
 							minPrio = x;
 							minTotal = xTotal;
-						}
-					}
-					return readyQueue.remove(readyQueue.indexOf(minPrio));
-				case "PRI":
-					for(Process x : readyQueue) {
-						if(x.getPriority() < minPrio.getPriority()) {
-							minPrio = x;
 						}
 					}
 					return readyQueue.remove(readyQueue.indexOf(minPrio));
