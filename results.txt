@@ -1,7 +1,7 @@
 Input File Name : sampleInput.txt
-CPU Scheduling Alg : FCFS(-1)
-CPU utilization : 
-Throughput : 
-Turnaround time : 
-Waiting time : 
-Response time : 
+CPU Scheduling Alg : FCFS (-1)
+CPU utilization : 0ms
+Throughput : 0ms
+Turnaround time : 170ms
+Waiting time : 170ms
+Response time : 15ms

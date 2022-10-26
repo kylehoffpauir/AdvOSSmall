@@ -11,8 +11,16 @@ public class Main {
 	public static Boolean ioQEmpty = true;
 	public static Boolean readyQEmpty = true;
 	private static final boolean DEBUG = true;
-	protected static LinkedList<Process> readyQueue = new LinkedList<Process>();
-	protected static LinkedList<Process> ioQueue = new LinkedList<Process>();
+	private static LinkedList<Process> readyQueue = new LinkedList<Process>();
+	private static LinkedList<Process> ioQueue = new LinkedList<Process>();
+	private static LinkedList<Process> completedProc = new LinkedList<Process>();
+	private static long projectStartTime;
+	private static long projectEndTime;
+	private static long throughput;
+	private static long utilization;
+	private static long turnaroundTime;
+	private static long waitingTime;
+	private static long responseTime;
 
 
 	public static void main(String[] args) {
@@ -60,11 +68,6 @@ public class Main {
 		return f;
 	}
 
-
-	//a mess
-	public static void readProc(File inFile) {
-	}
-
 	public static void sendOut(File inFile) {
 		//Create output file
 		PrintWriter output = null;
@@ -73,7 +76,14 @@ public class Main {
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
-		//TODO Get actual metrics from our threads
+		throughput = completedProc.size() / (projectEndTime - projectStartTime);
+		for (Process x : completedProc) {
+			utilization += x.getCpuTotal();
+			utilization += x.getIoTotal();
+			turnaroundTime += x.getTurnaround();
+			waitingTime += x.getWaitTime();
+			responseTime += x.getRespTime();
+		}
 
         //fill output file
 		output.println("Input File Name : " + inFile.getName());
@@ -81,12 +91,12 @@ public class Main {
 		if (quantum == -1)
 			output.println(" (" + quantum + ")");
 		else output.println();
-		String utilization = "", throughput = "", turnaroundTime = "", waitingTime = "", responseTime = "";
-		output.println("CPU utilization : " + utilization);
-		output.println("Throughput : " + throughput);
-		output.println("Turnaround time : " + turnaroundTime);
-		output.println("Waiting time : " + waitingTime);
-		output.println("Response time : " + responseTime);
+		//String utilization = "", throughput = "", turnaroundTime = "", waitingTime = "", responseTime = "";
+		output.println("CPU utilization : " + utilization + "ms");
+		output.println("Throughput : " + throughput + "ms");
+		output.println("Turnaround time : " + turnaroundTime + "ms");
+		output.println("Waiting time : " + waitingTime + "ms");
+		output.println("Response time : " + responseTime + "ms");
 		output.close();
 	}
 
@@ -99,6 +109,7 @@ public class Main {
 		CpuThread cput = new CpuThread();
 		IoThread iot = new IoThread();
 		ft.start();
+		projectStartTime = System.currentTimeMillis();
 		cput.start();
 		iot.start();
 		// wait for threads to end
@@ -109,13 +120,15 @@ public class Main {
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
+		projectEndTime = System.currentTimeMillis();
 		if(DEBUG) System.out.println("FILETHREAD EXITED AND QUEUES EMPTY");
 		if(DEBUG) System.out.println("Exits?: " + FileThread.exit + IoThread.exit + CpuThread.exit);
 		cput.interrupt();
 		iot.interrupt();
-
+		ft.interrupt();
 		if(DEBUG) System.out.println("Finished");
 		//TODO get output out of this?
+		sendOut(inFile);
 	}
 
 	//25
@@ -240,21 +253,27 @@ public class Main {
 								int sleeptime = currentProc.removeCpu();
 								sleep(sleeptime);
 								if (DEBUG) System.out.println("Cpu thread sleeping for " + sleeptime);
-								//synchronized (ioQueue) {
-									//if there is io to read, send to io
-									//if there is no io but still cpu time, send back into cpu
-									//if(!currentProc.getIo().isEmpty())
-								ioQueue.add(currentProc);
-									//else if(!currentProc.getCpu().isEmpty())
-									//	readyQueue.add(currentProc);
-								//}
+								if(!currentProc.getIo().isEmpty())
+									ioQueue.add(currentProc);
+								else if(currentProc.getCpu().isEmpty()) {
+									//if there is no more io and after being service this proc has no more cpu
+									//then it is complete
+									synchronized (completedProc) {
+										currentProc.stop();
+										completedProc.add(currentProc);
+									}
+								}
 							} catch (InterruptedException e) {
 								//e.printStackTrace();
 								exit = true;
 							}
+						} else if(currentProc.getIo().isEmpty()) {
+							synchronized (completedProc) {
+								currentProc.stop();
+								completedProc.add(currentProc);
+							}
 						}
 					}
-
 					readyQEmpty = true;
 					synchronized (reading) {
 						synchronized (ioQEmpty) {
@@ -314,15 +333,30 @@ public class Main {
 								sleep(sleeptime);
 								if (DEBUG) System.out.println("Io thread sleeping for " + sleeptime);
 								//synchronized (readyQueue) {
-								//if (!currentProc.getCpu().isEmpty())
-								readyQueue.add(currentProc);
-								//}
+								if (!currentProc.getCpu().isEmpty()) {
+									readyQueue.add(currentProc);
+								}
+								else if(currentProc.getIo().isEmpty()) {
+									//if after being service there is no more io and there is no more cpu
+									//stop the process
+									synchronized (completedProc) {
+										currentProc.stop();
+										completedProc.add(currentProc);
+									}
+								}
+							} else if(currentProc.getCpu().isEmpty()) {
+								//if we dequeue an empty io process and there is no cpu stop the process
+								synchronized (completedProc) {
+									currentProc.stop();
+									completedProc.add(currentProc);
+								}
 							}
 						} catch (InterruptedException e) {
 							//e.printStackTrace();
 							exit = true;
 						}
 					}
+				}
 					ioQEmpty = true;
 					synchronized (reading) {
 						synchronized (readyQEmpty) {
@@ -331,7 +365,6 @@ public class Main {
 							}
 						}
 					}
-				}
 			}//end !exit loop
 		}
 	}//end IoThread

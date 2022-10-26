@@ -6,6 +6,11 @@ public class Process implements Comparable{
     private ArrayList<Integer> io;
     private boolean isSleep;
     private int sleepTime;
+
+    public long getStartTime() {
+        return startTime;
+    }
+
     private long startTime;
     private long stopTime;
     private int cpuTotal;
@@ -23,8 +28,8 @@ public class Process implements Comparable{
         sleepTime = 0;
         startTime = System.currentTimeMillis();
         first = false;
-        addUpCpu();
-        addupIo();
+        cpuTotal = addUpCpu();
+        ioTotal = addUpIo();
     }
 
     public Process() {
@@ -35,8 +40,8 @@ public class Process implements Comparable{
         sleepTime = 0;
         startTime = System.currentTimeMillis();
         first = false;
-        addUpCpu();
-        addupIo();
+        cpuTotal = addUpCpu();
+        ioTotal = addUpIo();
     }
 
     public Process(boolean b, String item) {
@@ -84,7 +89,7 @@ public class Process implements Comparable{
         return io;
     }
 
-    public int compareTo(Proess o) {
+    public int compareTo(Process o) {
         if(this.priority < o.getPriority()) {
             return -1;
         }
@@ -94,14 +99,20 @@ public class Process implements Comparable{
         else
             return 0;
     }
-    public void addUpCpu() {
+    public int addUpCpu() {
+        int total = 0;
         for (int x : cpu)
-            cpuTotal += x;
+            total += x;
+        return total;
     }
-    public void addUpIo() {
+
+    public int addUpIo() {
+        int total = 0;
         for (int x : io)
-            ioTotal += x;
+            total += x;
+        return total;
     }
+
     public void stop() {
         stopTime = System.currentTimeMillis();
         turnaround = stopTime - startTime;
@@ -120,5 +131,41 @@ public class Process implements Comparable{
     @Override
     public int compareTo(Object o) {
         return 0;
+    }
+
+    public boolean isSleep() {
+        return isSleep;
+    }
+
+    public int getSleepTime() {
+        return sleepTime;
+    }
+
+    public long getStopTime() {
+        return stopTime;
+    }
+
+    public int getCpuTotal() {
+        return cpuTotal;
+    }
+
+    public int getIoTotal() {
+        return ioTotal;
+    }
+
+    public long getRespTime() {
+        return respTime;
+    }
+
+    public boolean isFirst() {
+        return first;
+    }
+
+    public long getTurnaround() {
+        return turnaround;
+    }
+
+    public long getWaitTime() {
+        return waitTime;
     }
 }
