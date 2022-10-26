@@ -5,6 +5,7 @@ import java.io.*;
 public class Main {
 	public static String algo = "";
 	public static int quantum = -1;
+	public static boolean reading = true;
 	private static final boolean DEBUG = true;
 	protected static LinkedList<Process> readyQueue = new LinkedList<Process>();
 	protected static LinkedList<Process> ioQueue = new LinkedList<Process>();
@@ -96,14 +97,16 @@ public class Main {
 		ft.start();
 		cput.start();
 		iot.start();
-		//bad, maybe find a better way eventually?
-		while(true) {
-			if (ft.isInterrupted() && readyQueue.isEmpty() && ioQueue.isEmpty()) {
+		boolean keepGoing = true;
+		while(keepGoing) {
+			if (ft.exit && iot.exit && cput.exit) {
+				if(DEBUG) System.out.println("FILETHREAD EXITED AND QUEUES EMPTY");
 				cput.interrupt();
 				iot.interrupt();
-				break;
+				keepGoing = false;
 			}
 		}
+		if(DEBUG) System.out.println("Finished");
 		//TODO get output out of this?
 	}
 
@@ -132,6 +135,7 @@ public class Main {
 
 		@Override
 		public void run() {
+			if(DEBUG) System.out.println("FileThread started");
 			while(!exit) {
 				Scanner f = null;
 				try {
@@ -175,17 +179,23 @@ public class Main {
 								p.addIo(Integer.parseInt(items[i]));
 							}
 						}
-						if (DEBUG) System.out.println(p);
-						readyQueue.add(p);
+						//if (DEBUG) System.out.println(p);
+						synchronized (readyQueue) {
+							readyQueue.add(p);
+						}
 					} else if (items[0].toLowerCase().equals("stop")) {
 						//if we run into a stop then we end the reading
 						this.exit = true;
+						reading = false;
+						if(DEBUG) System.out.println("STOPPING ReadThread");
 					} else {
 						System.err.println("Error - input file has unexpected command");
+						reading = false;
 						System.exit(3);
 					}
 					if (lineCount < 10) lineCount++;
 				}
+
 			}//end the !exit loop
 			return;
 		}
@@ -206,17 +216,35 @@ public class Main {
 
 		@Override
 		public void run() {
+			if(DEBUG) System.out.println("CpuThread started");
 			while (!exit) {
-				if(!readyQueue.isEmpty()) {
-					Process currentProc = algoRemove();
-					try {
-						//remove the first element from the process' cpu queue
-						Thread.sleep(currentProc.removeCpu());
-						ioQueue.add(currentProc);
-					} catch (InterruptedException e) {
-						//e.printStackTrace();
-						exit = true;
+				synchronized (readyQueue) {
+					if (!readyQueue.isEmpty()) {
+						//if(DEBUG) System.out.println(readyQueue);
+						Process currentProc = algoRemove();
+						if(!currentProc.getCpu().isEmpty()) {
+							if (DEBUG) System.out.println("CPUTHREAD\nCurrent Proc: " + currentProc);
+							try {
+								//remove the first element from the process' cpu queue
+								int sleeptime = currentProc.removeCpu();
+								sleep(sleeptime);
+								if (DEBUG) System.out.println("Cpu thread sleeping for " + sleeptime);
+								//synchronized (ioQueue) {
+									//if there is io to read, send to io
+									//if there is no io but still cpu time, send back into cpu
+									//if(!currentProc.getIo().isEmpty())
+										ioQueue.add(currentProc);
+									//else if(!currentProc.getCpu().isEmpty())
+									//	readyQueue.add(currentProc);
+								//}
+							} catch (InterruptedException e) {
+								//e.printStackTrace();
+								exit = true;
+							}
+						}
 					}
+					if(!reading && ioQueue.isEmpty())
+						exit = true;
 				}
 			}//end !exit loop
 		}
@@ -252,17 +280,30 @@ public class Main {
 
 		@Override
 		public void run() {
+			if(DEBUG) System.out.println("IoThread started");
 			while (!exit) {
-				if(!ioQueue.isEmpty()) {
-					Process currentProc = ioQueue.remove(0);
-					try {
-						//remove the first element from the process' cpu queue
-						Thread.sleep(currentProc.removeIo());
-						readyQueue.add(currentProc);
-					} catch (InterruptedException e) {
-						//e.printStackTrace();
-						exit = true;
+				synchronized (ioQueue) {
+					if (!ioQueue.isEmpty()) {
+						Process currentProc = ioQueue.remove(0);
+						if (DEBUG) System.out.println("IOTHREAD\nCurrent Proc: " + currentProc);
+						try {
+							//remove the first element from the process' cpu queue
+							if(!currentProc.getIo().isEmpty()) {
+								int sleeptime = currentProc.removeIo();
+								sleep(sleeptime);
+								if (DEBUG) System.out.println("Io thread sleeping for " + sleeptime);
+								//synchronized (readyQueue) {
+									//if (!currentProc.getCpu().isEmpty())
+										readyQueue.add(currentProc);
+								//}
+							}
+						} catch (InterruptedException e) {
+							//e.printStackTrace();
+							exit = true;
+						}
 					}
+					if(!reading && readyQueue.isEmpty())
+						exit = true;
 				}
 			}//end !exit loop
 		}
