@@ -26,23 +26,24 @@ public class Main {
 	public static void main(String[] args) {
 		//Go through file and use algos
 		File inFile = getIn(args);
-		switch (algo) {
-			case "FCFS":
-				FCFS(inFile);
-				break;
-			case "RR":
-				RR(inFile);
-				break;
-			case "SPN":
-				SPN(inFile);
-				break;
-			case "PRI":
-				PRI(inFile);
-				break;
-			default:
-				System.err.println("Error - algorithm option not valid. choose [FCFS | RR | SPN | PRI]");
-				System.exit(2);
-		}
+		doRun(inFile);
+//		switch (algo) {
+//			case "FCFS":
+//				FCFS(inFile);
+//				break;
+//			case "RR":
+//				RR(inFile);
+//				break;
+//			case "SPN":
+//				SPN(inFile);
+//				break;
+//			case "PRI":
+//				PRI(inFile);
+//				break;
+//			default:
+//				System.err.println("Error - algorithm option not valid. choose [FCFS | RR | SPN | PRI]");
+//				System.exit(2);
+//		}
 
 	}
 
@@ -76,7 +77,8 @@ public class Main {
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
-		throughput = completedProc.size() / (projectEndTime - projectStartTime);
+		throughput = (projectEndTime - projectStartTime) / completedProc.size();
+		//process level metrics will be combined for every completed process?
 		for (Process x : completedProc) {
 			utilization += x.getCpuTotal();
 			utilization += x.getIoTotal();
@@ -101,7 +103,7 @@ public class Main {
 	}
 
 	//100
-	public static void FCFS(File inFile) {
+	public static void doRun(File inFile) {
 		//TODO establish how to actually run the threads and simulate the processes
 		//does this need to be it's own class as well? does readProc need to be a member of the fileThread class
 		//im thinking maybe
@@ -129,21 +131,6 @@ public class Main {
 		if(DEBUG) System.out.println("Finished");
 		//TODO get output out of this?
 		sendOut(inFile);
-	}
-
-	//25
-	public static void SPN(File file) {
-
-	}
-
-	//25
-	public static void PRI(File file) {
-
-	}
-
-	//40
-	public static void RR(File file) {
-
 	}
 
 	public static class FileThread extends Thread {
@@ -250,17 +237,35 @@ public class Main {
 							//if (DEBUG) System.out.println("CPUTHREAD\nCurrent Proc: " + currentProc);
 							try {
 								//remove the first element from the process' cpu queue
-								int sleeptime = currentProc.removeCpu();
-								sleep(sleeptime);
-								if (DEBUG) System.out.println("Cpu thread sleeping for " + sleeptime);
-								if(!currentProc.getIo().isEmpty())
-									ioQueue.add(currentProc);
-								else if(currentProc.getCpu().isEmpty()) {
-									//if there is no more io and after being service this proc has no more cpu
-									//then it is complete
-									synchronized (completedProc) {
-										currentProc.stop();
-										completedProc.add(currentProc);
+								if(algo.equals("RR")) {
+									//TODO -- FIX THIS SO THE RR QUANTUM TIME WORKS
+									int cpuTime = currentProc.removeCpu() - quantum;
+									int sleeptime = quantum;
+									sleep(sleeptime);
+									if (DEBUG) System.out.println("Cpu thread sleeping for " + sleeptime);
+									if(!currentProc.getIo().isEmpty())
+										ioQueue.add(currentProc);
+									else if(currentProc.getCpu().isEmpty()) {
+										//if there is no more io and after being service this proc has no more cpu
+										//then it is complete
+										synchronized (completedProc) {
+											currentProc.stop();
+											completedProc.add(currentProc);
+										}
+									}
+								} else {
+									int sleeptime = currentProc.removeCpu();
+									sleep(sleeptime);
+									if (DEBUG) System.out.println("Cpu thread sleeping for " + sleeptime);
+									if(!currentProc.getIo().isEmpty())
+										ioQueue.add(currentProc);
+									else if(currentProc.getCpu().isEmpty()) {
+										//if there is no more io and after being service this proc has no more cpu
+										//then it is complete
+										synchronized (completedProc) {
+											currentProc.stop();
+											completedProc.add(currentProc);
+										}
 									}
 								}
 							} catch (InterruptedException e) {
@@ -287,17 +292,32 @@ public class Main {
 		}
 
 		public static Process algoRemove() {
+			int foundIndex = 0;
+			Process minPrio = readyQueue.get(0);
 			switch (algo) {
 				case "FCFS":
-					return readyQueue.remove(0);
+					return readyQueue.remove(foundIndex);
 				case "RR":
-					return readyQueue.remove(0);
+					return readyQueue.remove(foundIndex);
 				case "SPN":
-					return readyQueue.remove(0);
+					int minTotal = minPrio.getIoTotal() + minPrio.getCpuTotal();
+					for(Process x : readyQueue) {
+						int xTotal = x.getCpuTotal() + x.getIoTotal();
+						if(xTotal < minTotal) {
+							minPrio = x;
+							minTotal = xTotal;
+						}
+					}
+					return readyQueue.remove(readyQueue.indexOf(minPrio));
 				case "PRI":
-					return readyQueue.remove(0);
+					for(Process x : readyQueue) {
+						if(x.getPriority() < minPrio.getPriority()) {
+							minPrio = x;
+						}
+					}
+					return readyQueue.remove(readyQueue.indexOf(minPrio));
 				default:
-					System.err.println("Error - cpu error when attempting to dequeue a process");
+					System.err.println("Error - Removal Algorithm option not valid");
 					System.exit(4);
 					return new Process();
 			}
