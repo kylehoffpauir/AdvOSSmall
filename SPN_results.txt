@@ -1,0 +1,7 @@
+Input File Name : sampleInput.txt
+CPU Scheduling Alg : SPN
+CPU utilization : 150ms
+Throughput : 261ms
+Turnaround time : 229ms
+Waiting time : 379ms
+Response time : 13ms

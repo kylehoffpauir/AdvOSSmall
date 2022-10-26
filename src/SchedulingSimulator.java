@@ -4,7 +4,7 @@ import java.util.*;
 import java.io.*;
 
 
-public class Main {
+public class SchedulingSimulator {
 	public static String algo = "";
 	public static int quantum = -1;
 	public static Boolean reading = true;
@@ -52,7 +52,18 @@ public class Main {
 	}
 
 	public static void sendOut(File inFile) {
-		throughput = (projectEndTime - projectStartTime) / completedProc.size();
+		//Create output file
+		PrintWriter output = null;
+		try {
+			output = new PrintWriter("results.txt");
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+		try {
+			throughput = (projectEndTime - projectStartTime) / completedProc.size();
+		} catch(ArithmeticException e) {
+			System.err.println("Error - threads ran too fast to add processes to completed proc queue! try again");
+		}
 		//process level metrics will be combined for every completed process?
 		for (Process x : completedProc) {
 			utilization += x.getCpuTotal();
@@ -63,17 +74,17 @@ public class Main {
 		}
 
         //fill output file
-		System.out.println("Input File Name : " + inFile.getName());
-		System.out.print("CPU Scheduling Alg : " + algo);
+		output.println("Input File Name : " + inFile.getName());
+		output.print("CPU Scheduling Alg : " + algo);
 		if (quantum != -1)
-			System.out.println(" (" + quantum + ")");
-		else System.out.println();
-		System.out.println("CPU utilization : " + utilization + "ms");
-		System.out.println("Throughput : " + throughput + "ms");
-		System.out.println("Turnaround time : " + turnaroundTime + "ms");
-		System.out.println("Waiting time : " + waitingTime + "ms");
-		System.out.println("Response time : " + responseTime + "ms");
-		System.out.println("Response time : " + responseTime + "ms");
+			output.println(" (" + quantum + ")");
+		else output.println();
+		output.println("CPU utilization : " + utilization + "ms");
+		output.println("Throughput : " + throughput + "ms");
+		output.println("Turnaround time : " + turnaroundTime + "ms");
+		output.println("Waiting time : " + waitingTime + "ms");
+		output.println("Response time : " + responseTime + "ms");
+		output.close();
 	}
 
 	//100

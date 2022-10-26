@@ -1,0 +1,7 @@
+Input File Name : sampleInput.txt
+CPU Scheduling Alg : RR (8)
+CPU utilization : 560ms
+Throughput : 38ms
+Turnaround time : 245ms
+Waiting time : 805ms
+Response time : 124ms
