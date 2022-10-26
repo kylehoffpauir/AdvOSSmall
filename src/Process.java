@@ -6,6 +6,14 @@ public class Process implements Comparable{
     private ArrayList<Integer> io;
     private boolean isSleep;
     private int sleepTime;
+    private long startTime;
+    private long stopTime;
+    private int cpuTotal;
+    private int ioTotal;
+    private long respTime;
+    private boolean first;
+    private long turnaround;
+    private long waitTime;
 
     public Process(int priority, ArrayList<Integer> cpu, ArrayList<Integer> io) {
         this.priority = priority;
@@ -13,6 +21,10 @@ public class Process implements Comparable{
         this.io = io;
         isSleep = false;
         sleepTime = 0;
+        startTime = System.currentTimeMillis();
+        first = false;
+        addUpCpu();
+        addupIo();
     }
 
     public Process() {
@@ -21,6 +33,10 @@ public class Process implements Comparable{
         this.io = new ArrayList<Integer>();
         isSleep = false;
         sleepTime = 0;
+        startTime = System.currentTimeMillis();
+        first = false;
+        addUpCpu();
+        addupIo();
     }
 
     public Process(boolean b, String item) {
@@ -31,6 +47,10 @@ public class Process implements Comparable{
     public int removeCpu() {
         int x = this.cpu.get(0);
         this.cpu.remove(0);
+        if (first == false) {
+            first = true;
+            respTime = System.currentTimeMillis() - startTime;
+        }
         return x;
     }
 
@@ -64,7 +84,7 @@ public class Process implements Comparable{
         return io;
     }
 
-    public int compareTo(Process o) {
+    public int compareTo(Proess o) {
         if(this.priority < o.getPriority()) {
             return -1;
         }
@@ -73,6 +93,19 @@ public class Process implements Comparable{
         }
         else
             return 0;
+    }
+    public void addUpCpu() {
+        for (int x : cpu)
+            cpuTotal += x;
+    }
+    public void addUpIo() {
+        for (int x : io)
+            ioTotal += x;
+    }
+    public void stop() {
+        stopTime = System.currentTimeMillis();
+        turnaround = stopTime - startTime;
+        waitTime = turnaround + (cpuTotal + ioTotal);
     }
 
     @Override
