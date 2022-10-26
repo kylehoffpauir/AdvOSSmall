@@ -85,6 +85,17 @@ public class SchedulingSimulator {
 		output.println("Waiting time : " + waitingTime + "ms");
 		output.println("Response time : " + responseTime + "ms");
 		output.close();
+
+		System.out.println("Input File Name : " + inFile.getName());
+		System.out.print("CPU Scheduling Alg : " + algo);
+		if (quantum != -1)
+			System.out.println(" (" + quantum + ")");
+		else System.out.println();
+		System.out.println("CPU utilization : " + utilization + "ms");
+		System.out.println("Throughput : " + throughput + "ms");
+		System.out.println("Turnaround time : " + turnaroundTime + "ms");
+		System.out.println("Waiting time : " + waitingTime + "ms");
+		System.out.println("Response time : " + responseTime + "ms");
 	}
 
 	//100
