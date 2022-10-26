@@ -8,6 +8,8 @@ public class Main {
 	public static String algo = "";
 	public static int quantum = -1;
 	public static Boolean reading = true;
+	public static Boolean ioQEmpty = true;
+	public static Boolean readyQEmpty = true;
 	private static final boolean DEBUG = true;
 	protected static LinkedList<Process> readyQueue = new LinkedList<Process>();
 	protected static LinkedList<Process> ioQueue = new LinkedList<Process>();
@@ -99,15 +101,19 @@ public class Main {
 		ft.start();
 		cput.start();
 		iot.start();
-		boolean keepGoing = true;
-		while(keepGoing) {
-			if (ft.exit && iot.exit && cput.exit) {
-				if(DEBUG) System.out.println("FILETHREAD EXITED AND QUEUES EMPTY");
-				cput.interrupt();
-				iot.interrupt();
-				keepGoing = false;
-			}
+		// wait for threads to end
+		try {
+			ft.join();
+			cput.join();
+			iot.join();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
 		}
+		if(DEBUG) System.out.println("FILETHREAD EXITED AND QUEUES EMPTY");
+		if(DEBUG) System.out.println("Exits?: " + FileThread.exit + IoThread.exit + CpuThread.exit);
+		cput.interrupt();
+		iot.interrupt();
+
 		if(DEBUG) System.out.println("Finished");
 		//TODO get output out of this?
 	}
@@ -222,10 +228,13 @@ public class Main {
 			while (!exit) {
 				synchronized (readyQueue) {
 					if (!readyQueue.isEmpty()) {
+						synchronized (readyQEmpty) {
+							readyQEmpty = false;
+						}
 						//if(DEBUG) System.out.println(readyQueue);
 						Process currentProc = algoRemove();
 						if(!currentProc.getCpu().isEmpty()) {
-							if (DEBUG) System.out.println("CPUTHREAD\nCurrent Proc: " + currentProc);
+							//if (DEBUG) System.out.println("CPUTHREAD\nCurrent Proc: " + currentProc);
 							try {
 								//remove the first element from the process' cpu queue
 								int sleeptime = currentProc.removeCpu();
@@ -235,7 +244,7 @@ public class Main {
 									//if there is io to read, send to io
 									//if there is no io but still cpu time, send back into cpu
 									//if(!currentProc.getIo().isEmpty())
-										ioQueue.add(currentProc);
+								ioQueue.add(currentProc);
 									//else if(!currentProc.getCpu().isEmpty())
 									//	readyQueue.add(currentProc);
 								//}
@@ -245,9 +254,14 @@ public class Main {
 							}
 						}
 					}
+
+					readyQEmpty = true;
 					synchronized (reading) {
-						if (!reading && ioQueue.isEmpty())
-							exit = true;
+						synchronized (ioQEmpty) {
+							if (!reading && ioQEmpty) {
+								exit = true;
+							}
+						}
 					}
 				}
 			}//end !exit loop
@@ -288,17 +302,20 @@ public class Main {
 			while (!exit) {
 				synchronized (ioQueue) {
 					if (!ioQueue.isEmpty()) {
+						synchronized (ioQEmpty) {
+							ioQEmpty = false;
+						}
 						Process currentProc = ioQueue.remove(0);
-						if (DEBUG) System.out.println("IOTHREAD\nCurrent Proc: " + currentProc);
+						//if (DEBUG) System.out.println("IOTHREAD\nCurrent Proc: " + currentProc);
 						try {
 							//remove the first element from the process' cpu queue
-							if(!currentProc.getIo().isEmpty()) {
+							if (!currentProc.getIo().isEmpty()) {
 								int sleeptime = currentProc.removeIo();
 								sleep(sleeptime);
 								if (DEBUG) System.out.println("Io thread sleeping for " + sleeptime);
 								//synchronized (readyQueue) {
-									//if (!currentProc.getCpu().isEmpty())
-										readyQueue.add(currentProc);
+								//if (!currentProc.getCpu().isEmpty())
+								readyQueue.add(currentProc);
 								//}
 							}
 						} catch (InterruptedException e) {
@@ -306,9 +323,13 @@ public class Main {
 							exit = true;
 						}
 					}
+					ioQEmpty = true;
 					synchronized (reading) {
-						if (!reading && readyQueue.isEmpty())
-							exit = true;
+						synchronized (readyQEmpty) {
+							if (!reading && readyQEmpty) {
+								exit = true;
+							}
+						}
 					}
 				}
 			}//end !exit loop
